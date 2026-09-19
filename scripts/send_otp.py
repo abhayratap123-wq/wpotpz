@@ -7,7 +7,8 @@ import sys
 
 from astra import Client
 
-SESSION_ID = "otp_bot"
+# 🔥 MAIN FIX: Session ID change kar diya taaki purani corrupt cache use na ho
+SESSION_ID = "otp_bot_fresh_v1"
 
 async def main() -> None:
     whatsapp_phone = os.getenv("WHATSAPP_PHONE")
@@ -18,20 +19,19 @@ async def main() -> None:
             "❌ Missing Secrets: WHATSAPP_PHONE aur OTP_PHONE GitHub repo secrets me set nahi hain."
         )
 
-    # Client initialize karna
+    # Client initialize karna (Phone number dene se ye Pairing Code generate karega)
     client = Client(session_id=SESSION_ID, phone=whatsapp_phone)
 
     print("=====================================================")
-    print("⏳ Astra Client Start ho raha hai...")
-    print("🚨 DHYAN DEIN (Agar pehli baar run kar rahe hain):")
+    print("⏳ Astra Client NAYE SESSION ke sath Start ho raha hai...")
+    print("🚨 DHYAN DEIN:")
     print("   Niche logs me ek 8-character ka PAIRING CODE aayega.")
     print("   Apne phone me WhatsApp open karein -> Linked Devices -> Link a Device")
     print("   -> 'Link with phone number instead' par click karein aur wo code daalein.")
-    print("   ⏰ Aapke paas code daalne ke liye sirf 2 MINUTES hain!")
     print("=====================================================\n")
 
     try:
-        # Astra start hoga (yahan pairing code print hoga agar session nahi hai)
+        # Astra start hoga (yahan pairing code print hoga)
         await client.start()
         
         # Message bhejna
@@ -42,10 +42,10 @@ async def main() -> None:
         
     except Exception as e:
         print(f"\n❌ SCRIPT FAIL HO GAYI: {str(e)}")
-        print("👉 Agar 'Timeout' error aaya hai, toh aapne 2 minute ke andar WhatsApp me code nahi daala. Kripya Action ko dobara run karein aur jaldi code daalein.")
+        print("👉 Agar Timeout error aaya hai, toh aapne code nahi daala.")
         sys.exit(1)
     finally:
-        # Hamesha client ko stop karein taaki session corrupt na ho
+        # Client stop karein
         if client.is_connected:
             await client.stop()
 
