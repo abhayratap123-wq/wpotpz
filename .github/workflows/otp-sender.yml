@@ -1,0 +1,61 @@
+name: WhatsApp OTP Sender
+
+on:
+  workflow_dispatch:  # Manual trigger
+  # schedule:
+  #   - cron: '0 */6 * * *'  # Har 6 ghante me session refresh
+
+jobs:
+  send-otp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install chromium
+
+      - name: Restore WhatsApp session
+        uses: actions/cache@v4
+        with:
+          path: sessions/
+          key: whatsapp-session-${{ github.run_id }}
+          restore-keys: |
+            whatsapp-session-
+
+      - name: Run OTP sender
+        env:
+          WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
+          OTP_PHONE: ${{ secrets.OTP_PHONE }}
+        run: |
+          python -c "
+          import asyncio
+          from astra import Client
+          import os
+          
+          async def main():
+              client = Client(session_id='otp_bot', phone=os.getenv('WHATSAPP_PHONE'))
+              await client.start()
+              phone = os.getenv('OTP_PHONE')
+              await client.send_message(phone, 'Test OTP: 123456')
+              print('OTP sent!')
+              await client.stop()
+          
+          asyncio.run(main())
+          "
+
+      - name: Save session
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: sessions/
+          key: whatsapp-session-${{ github.run_id }}
