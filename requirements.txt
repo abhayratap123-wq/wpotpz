@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+astra-engine
+playwright
+python-dotenv
