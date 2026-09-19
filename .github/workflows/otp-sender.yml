@@ -1,54 +1,38 @@
 name: WhatsApp OTP Sender
 
 on:
-  workflow_dispatch:  # Manual trigger
-  # schedule:
-  #   - cron: '0 */6 * * *'  # Har 6 ghante me session refresh
+  workflow_dispatch: # Manual trigger from GitHub Actions tab
 
 jobs:
   send-otp:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          python -m playwright install --with-deps chromium
+          # Playwright browsers zaroori hain Astra ke liye
+          playwright install chromium 
 
-      # Astra saves its login under .astra_sessions/<session_id>/ — this
-      # MUST match that path or the cache restores nothing and every run
-      # asks for pairing again.
-      - name: Restore WhatsApp session
+      # 👉 YAHAN CACHE FIX HAI (yeh session save rakhega)
+      - name: Cache Astra WhatsApp Session
         uses: actions/cache@v4
         with:
-          path: .astra_sessions/
-          key: whatsapp-session-${{ github.run_id }}
+          path: ~/.astra_sessions
+          key: whatsapp-session-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
-            whatsapp-session-
+            whatsapp-session-${{ runner.os }}-
 
-      # First run ever: no session is cached yet, so Astra prints an
-      # 8-character pairing code in this step's live log. Open WhatsApp
-      # on your phone > Linked Devices > Link a Device > "Link with phone
-      # number instead", and type that code in within a couple of
-      # minutes. Every run after that reuses the cached session.
-      - name: Run OTP sender
+      - name: Run WhatsApp OTP Script
         env:
           WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
           OTP_PHONE: ${{ secrets.OTP_PHONE }}
         run: python scripts/send_otp.py
-
-      - name: Save session
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: .astra_sessions/
-          key: whatsapp-session-${{ github.run_id }}
